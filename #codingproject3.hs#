@@ -1,0 +1,71 @@
+import Robots
+--ethan hale
+--Eshale@syr.edu
+
+--Function 1
+--the move function moves the rbt from one (x,y) position to a different spot
+move :: (Integer,Integer) -> Robot -> Robot
+move (x,y) (Drone (old_x,old_y) item log) = (Drone (old_x+x,old_y+y) item log)
+move (x,y) (Rover (old_x,old_y) item log) =( Rover (old_x+x,old_y+y) item log ) 
+--t1 = move (10,20) sampleDrone -- should evaluate to Drone (15,24)(Just Game)["Pickup Game","wake"]
+--t2 = move (6,8) sampleRover1 -- should evaluate to Rover (8,18) [Book,Device,toy,Book] [("Pickup Book",(0,5))]
+--t3 = move (2,3) sampleRover2 -- should evaluate to rover (1,-1) [Book][("Pickup Book", (2,1)),("DropAll Book", (3,2)),("Pickip Book",(0,5))] 
+
+--Function 2
+--the reset function has the effect of erasing the log of rbt and rmoving any items held by it
+reset :: Robot -> Robot
+reset (Drone (x,y) item log) = (Drone (x,y) Nothing [])
+reset (Rover (x,y) item log) = (Rover (x,y) [] [])
+--t1 = reset sampleDrone -- should evaluate to Drone(5,4)Nothing[]
+--t2 = reset sampleRover2 -- should evaluate to rover(-1,-4)[][] 
+--t3 = reset sampleRover1 --should evaluate to rover(2,10)[][]   
+
+--Function 3
+--the function addEntry adds a string to the front of the robots log
+addEntry :: String -> Robot -> Robot
+addEntry str (Drone(x,y)item log) = (Drone(x,y)item (str:log)
+addEntry str (Rover loc item log) = (Rover loc item ((str,loc):log)
+--t1 = addEntry "sleep" sampleDrone -- should evaluate to Drone (5,4) (Just Game)["sleep","Pickup Game","wake"]
+--t2 = addEntry "sleep" sampleRover1 -- should evaluate to Rover(2,10) [Book,Device,Toy,Book][("sleep"),(2,10)),("Pickup Book",(0,5))]
+--t3 = addEntry "sl" sampleDrone -- should evaluate to Drone (5,4) (Just Game)["sl","Pickup Game", "wake"
+
+--Function 4
+--the redact function takes a string and removes it from the robots log
+redact :: String -> Robot -> Robot
+redact str (Drone(x,y)item log) = Drone(x,y)item [x| x<-log,x /= str]
+redact str (Rover(x,y)item log) = Rover(x,y)item [(s,l)|(s,l)<-log,s /= str]
+--t1 = redact "Pickup Game" sampleDrone -- should evaluate to Drone (5,4) (Just Game) ["wake"]
+--t2 = redact "Game" sampleDrone -- should evaluate to Drone (5,4) (just Game)["Pickup Game", "wake"]
+--t3 = redact "Pickuo Book" sampleRover2 -- should evaluate to Rover (-1,-4)[Book][("DropAll Book", (3,2))]
+
+--Function 5 
+--returns the robots state obtained when rbt picks up thing
+pickup :: Item -> Robot -> Robot
+pickup thing (Drone(x,y)item log) = addEntry ("Pickup" ++ show thing)(Drone(x,y)(Just thing)log) 
+pickup thing (Rover(x,y)item log) = addEntry ("Pickup" ++ show thing)(Rover(x,y)(thing:item)log)
+
+--t1 = pickup Toy sampleDrone -- should evaluate to Drone (5,4) (Just Toy) ["Pickup Toy", "Pickup Game", "wake"]
+--t2 = pickup Toy sampleRover1 -- should evaluate to Rover (2,10) [Toy,Book,Device,Toy,Book] ["Pickup Toy",(2,10)),("Pickup Book",(0,5))]
+
+--Function 6 
+--returns the robots state when he drops a item 
+dropAll :: Item -> Robot -> Robot
+dropAll thing (Drone(x,y)item log) 
+        |(Just thing) == item = (Drone(x,y)Nothing(("Drop all "++(show thing)):log)
+        |otherwise = (Drone(x,y)item (("Drop all "++(show thing)):log)
+dropAll thing (Rover loc item log) = Rover loc [x|x <- item, x/= thing]((("Drop all "++(show thing)),loc):log)  
+--t1 = dropAll Game sampleDrone -- should evaluate to Drone (5,4) Nothing ["DropAll Game", "Pickup Game", "wake"]
+--t2 = dropAll Toy sampleDrone -- should evaluate to Drone (5,4) (just Game) ["DropAll Toy", "Pickup Game", "wake"]
+--t3 = dropAll Book sampleRover1 -- should evaluate Rover (2,10) [Device,Toy] [("DropAll Book",(2,10)),("Pickup Book",(0,5))]
+
+--Function 7
+--perform returns the resulting state when rbt performs the instruction i
+perform :: Instr -> Robot -> Robot
+perform (Move(x,y))rbt = move (x,y) rbt
+perform Reset rbt = reset rbt
+perform (Log str) rbt = addEntry str rbt
+perform (Redact str) rbt = redact str rbt 
+perfrom (Pickup i) rbt = pickup i rbt 
+perform (DropAll i) rbt = dropAll i rbt 
+--t1 = perform (Move (10,20)) sampleDrone -- should evaluate to Drone (15,24) (Just Game) ["Pickup Game","wake"
+--t2 = perform (Redact "Pickup Book") sampleRover2 -- should evaluate to Rover (-1,-4) [Book] [("DropAll Book",(3,2))]
